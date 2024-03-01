@@ -14,6 +14,13 @@ export default defineConfig({
       include: 'src/**',
     },
   },
+  optimizeDeps: {
+    exclude: [
+      'codemirror',
+      '@codemirror/lang-markdown',
+      '@codemirror/highlight',
+    ],
+  },
   plugins: [
     svelte(),
     {
