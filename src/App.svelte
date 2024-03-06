@@ -2,16 +2,26 @@
   import CodeMirror from 'svelte-codemirror-editor'
   import { EditorView } from 'codemirror'
   import { markdown } from '@codemirror/lang-markdown'
-  import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+  import {
+    HighlightStyle,
+    syntaxHighlighting,
+    bracketMatching,
+  } from '@codemirror/language'
   import { tags, Tag, styleTags } from '@lezer/highlight'
   import { vim } from '@replit/codemirror-vim'
+  import { awesome_line_wrapping_plugin } from './js/linewrapping'
 
   const customTags = {
     lineThrough: Tag.define(),
+    list: Tag.define(),
+    listMarker: Tag.define(),
+    task: Tag.define(),
+    taskMarker: Tag.define(),
+    done: Tag.define(),
+    doneMarker: Tag.define(),
   }
 
   const lineThroughDelim = { resolve: 'lineThrough', mark: 'lineThroughMark' }
-
   const lineThrough = {
     defineNodes: ['lineThrough', 'lineThroughMark'],
     parseInline: [
@@ -28,8 +38,95 @@
     ],
     props: [
       styleTags({
-        // HighlightMark: defaultTags.processingInstruction,
+        // lineThroughMark: defaultTags.processingInstruction,
         lineThrough: customTags.lineThrough,
+      }),
+    ],
+  }
+
+  class doneParser {
+    nextLine() {
+      return false
+    }
+    finish(cx: any, leaf: any) {
+      cx.addLeafElement(
+        leaf,
+        cx.elt('done', leaf.start, leaf.start + leaf.content.length, [
+          cx.elt('doneMarker', leaf.start, leaf.start + 4),
+          ...cx.parser.parseInline(leaf.content.slice(4), leaf.start + 4),
+        ])
+      )
+      return true
+    }
+  }
+  const done = {
+    name: 'done',
+    // defineNodes: [
+    //   { name: 'done', block: true, style: tags.list },
+    //   { name: 'doneMarker', style: tags.atom },
+    // ],
+    defineNodes: ['done', 'doneMarker'],
+    parseBlock: [
+      {
+        name: 'done',
+        leaf(cx: any, leaf: any) {
+          const regex = new RegExp('\\[[xX]\\]\\s')
+          return regex.test(leaf.content) && cx.parentType().name == 'ListItem'
+            ? new doneParser()
+            : null
+        },
+      },
+    ],
+    props: [
+      styleTags({
+        doneMarker: customTags.doneMarker,
+        done: customTags.done,
+      }),
+    ],
+  }
+
+  class taskParser {
+    nextLine() {
+      return false
+    }
+    finish(cx: any, leaf: any) {
+      cx.addLeafElement(
+        leaf,
+        cx.elt('task', leaf.start, leaf.start + leaf.content.length, [
+          cx.elt('taskMarker', leaf.start, leaf.start + 4),
+          ...cx.parser.parseInline(leaf.content.slice(4), leaf.start + 4),
+        ])
+      )
+      return true
+    }
+  }
+
+  const task = {
+    name: 'task',
+    defineNodes: ['task', 'taskMarker'],
+    parseBlock: [
+      {
+        name: 'task',
+        leaf(cx: any, leaf: any) {
+          const regex = new RegExp('\\[[\\s]\\]\\s')
+          return regex.test(leaf.content) && cx.parentType().name == 'ListItem'
+            ? new taskParser()
+            : null
+        },
+      },
+    ],
+    props: [
+      styleTags({
+        taskMarker: customTags.taskMarker,
+        task: customTags.task,
+      }),
+    ],
+  }
+
+  const list = {
+    props: [
+      styleTags({
+        ListMark: customTags.listMarker,
       }),
     ],
   }
@@ -43,13 +140,21 @@
       { tag: tags.emphasis, fontStyle: 'italic' },
       { tag: tags.contentSeparator, class: 'separator' },
       { tag: customTags.lineThrough, class: 'linethrough' },
+      { tag: customTags.task, class: 'task' },
+      { tag: customTags.taskMarker, class: 'task-marker' },
+      { tag: customTags.list, class: 'list' },
+      { tag: customTags.listMarker, class: 'list-marker' },
+      { tag: customTags.done, class: 'done' },
+      { tag: customTags.doneMarker, class: 'done-marker' },
     ])
   )
 
   let extensions = [
     vim(),
     styles,
+    bracketMatching({ brackets: '{}' }),
     EditorView.lineWrapping,
+    awesome_line_wrapping_plugin,
     EditorView.domEventHandlers({
       focus: () => {
         focused = true
@@ -81,9 +186,30 @@
     '.linethrough': {
       'text-decoration': 'line-through',
     },
+    '.cm-line:not(.cm-activeLine) .list-marker, .cm-line:not(.cm-activeLine) .task-marker, .cm-line:not(.cm-activeLine) .done-marker':
+      {
+        'font-size': '1px',
+      },
+    '.cm-line:not(.cm-activeLine) .list-marker:not(:has(+ .task-marker)):not(:has(+ .done-marker))::before':
+      {
+        content: '"-"',
+        'font-size': '1rem',
+      },
+    '.cm-line:not(.cm-activeLine) .list-marker:has(+ .task-marker)::before': {
+      content: '"\\25AA"',
+      'font-size': '1rem',
+    },
+    '.cm-line:not(.cm-activeLine) .done': {
+      color: '#c4c4c4',
+    },
+    '.cm-line:not(.cm-activeLine) .list-marker:has(+ .done-marker)::before': {
+      content: '"\\2718"',
+      'font-size': '1rem',
+      color: '#c4c4c4',
+    },
   }
 
-  let value: string = '--hallo-- \n\n---'
+  let value: string = ''
   let focused: boolean = false
   let view: any
 
@@ -119,6 +245,9 @@
         bind:value
         lang={markdown({
           extensions: [
+            task,
+            done,
+            list,
             lineThrough,
             {
               remove: ['SetextHeading'],
