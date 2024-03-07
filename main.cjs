@@ -30,6 +30,57 @@ const createWindow = () => {
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
+  // add keyboard edit shortcuts
+  var template = [
+    {
+      label: '',
+      submenu: [
+        {
+          label: 'Close',
+          click() {
+            mainWindow.close()
+          },
+        },
+        {
+          label: 'Quit',
+          click() {
+            app.quit()
+          },
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
+        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
+        { type: 'separator' },
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
+        { type: 'separator' },
+        {
+          label: 'Select All',
+          accelerator: 'CmdOrCtrl+A',
+          selector: 'selectAll:',
+        },
+      ],
+    },
+    {
+      label: 'Vim',
+      submenu: [
+        {
+          label: 'Turn on/off Vim',
+          click() {
+            mainWindow.webContents.send('on-turn-on-off-vim')
+          },
+        },
+      ],
+    },
+  ]
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+
   mainWindow.webContents.on('did-finish-load', async () => {
     mainWindow.webContents.send('on-send-data', data)
   })

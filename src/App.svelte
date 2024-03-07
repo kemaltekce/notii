@@ -10,15 +10,24 @@
   import { tags, Tag, styleTags } from '@lezer/highlight'
   import { vim } from '@replit/codemirror-vim'
   import { awesome_line_wrapping_plugin } from './js/linewrapping'
+  import backgroundSoundUrl from './assets/background.mp3'
 
   const customTags = {
     lineThrough: Tag.define(),
+    lineThroughMark: Tag.define(),
     list: Tag.define(),
     listMarker: Tag.define(),
     task: Tag.define(),
     taskMarker: Tag.define(),
     done: Tag.define(),
     doneMarker: Tag.define(),
+    strong: Tag.define(),
+    emphasis: Tag.define(),
+    emphasisMark: Tag.define(),
+    code: Tag.define(),
+    codeMark: Tag.define(),
+    codeText: Tag.define(),
+    quoteMark: Tag.define(),
   }
 
   const lineThroughDelim = { resolve: 'lineThrough', mark: 'lineThroughMark' }
@@ -38,7 +47,7 @@
     ],
     props: [
       styleTags({
-        // lineThroughMark: defaultTags.processingInstruction,
+        lineThroughMark: customTags.lineThroughMark,
         lineThrough: customTags.lineThrough,
       }),
     ],
@@ -127,6 +136,13 @@
     props: [
       styleTags({
         ListMark: customTags.listMarker,
+        StrongEmphasis: customTags.strong,
+        Emphasis: customTags.emphasis,
+        EmphasisMark: customTags.emphasisMark,
+        InlineCode: customTags.code,
+        CodeMark: customTags.codeMark,
+        CodeText: customTags.codeText,
+        QuoteMark: customTags.quoteMark,
       }),
     ],
   }
@@ -140,12 +156,20 @@
       { tag: tags.emphasis, fontStyle: 'italic' },
       { tag: tags.contentSeparator, class: 'separator' },
       { tag: customTags.lineThrough, class: 'linethrough' },
+      { tag: customTags.lineThroughMark, class: 'linethrough-marker' },
       { tag: customTags.task, class: 'task' },
       { tag: customTags.taskMarker, class: 'task-marker' },
       { tag: customTags.list, class: 'list' },
       { tag: customTags.listMarker, class: 'list-marker' },
       { tag: customTags.done, class: 'done' },
       { tag: customTags.doneMarker, class: 'done-marker' },
+      { tag: customTags.strong, class: 'strong' },
+      { tag: customTags.emphasis, class: 'emphasis' },
+      { tag: customTags.emphasisMark, class: 'emphasis-marker' },
+      { tag: customTags.code, class: 'code' },
+      { tag: customTags.codeMark, class: 'code-marker' },
+      { tag: customTags.codeText, class: 'code-text' },
+      { tag: customTags.quoteMark, class: 'quote-marker' },
     ])
   )
 
@@ -164,9 +188,9 @@
       },
     }),
   ]
-  const cmStyles = {
+  let cmStyles = {
     '.cm-activeLine': {
-      'background-color': 'transparent !important',
+      'background-color': 'transparent',
     },
     '.cm-gutters': {
       display: 'none',
@@ -177,15 +201,67 @@
     '.cm-scroller': {
       'overflow-x': 'clip',
     },
+    // horizontal line
     '.cm-line:has(.separator):not(.cm-activeLine):not(:has(.cm-selectionMatch))':
       {
         color: '#00000000',
         background:
           'linear-gradient(to top, #f9f9f9 44%, #c4c4c4 44%, #c4c4c4 56%, #f9f9f9 56%)',
       },
+    '.cm-line:has(.code-marker):not(:has(.code)):not(.cm-activeLine):not(:has(.cm-selectionMatch))':
+      {
+        color: '#00000000',
+        background: '#fcd0a5',
+        // 'linear-gradient(to top, #f9f9f9 44%, #c4c4c4 44%, #c4c4c4 56%, #f9f9f9 56%)',
+      },
+    // inline
     '.linethrough': {
-      'text-decoration': 'line-through',
+      'text-decoration': '3px #be9cf3 wavy line-through',
+      // color: '#c4c4c4',
     },
+    '.strong': {
+      'font-weight': 'bold',
+    },
+    '.emphasis': {
+      'font-style': 'italic',
+      color: '#d14c4c',
+    },
+    '.code': {
+      background: '#fcd0a5',
+      padding: '0 7px',
+      'border-radius': '3px',
+    },
+    '.cm-line:has(.code-text)': {
+      background: '#fcd0a5',
+    },
+    // '.cm-line:has(.quote-marker):not(.cm-activeLine):not(:has(.cm-selectionMatch))':
+    //   {
+    //     'border-left': '3px solid #c4c4c4',
+    //     'margin-left': '0.5rem',
+    //   },
+    '.cm-line:not(.cm-activeLine):not(:has(.cm-selectionMatch)) .quote-marker::before':
+      {
+        content: '"\\00a0"',
+        'border-left': '3px solid #c4c4c4',
+        'font-size': '1rem',
+      },
+    '.cm-line:not(.cm-activeLine):not(:has(.cm-selectionMatch)) .emphasis-marker':
+      {
+        'font-size': '1px',
+      },
+    '.cm-line:not(.cm-activeLine):not(:has(.cm-selectionMatch)) .code-marker':
+      {
+        'font-size': '1px',
+      },
+    '.cm-line:not(.cm-activeLine):not(:has(.cm-selectionMatch)) .quote-marker':
+      {
+        'font-size': '1px',
+      },
+    '.cm-line:not(.cm-activeLine):not(:has(.cm-selectionMatch)) .linethrough-marker':
+      {
+        'font-size': '1px',
+      },
+    // list, task, done
     '.cm-line:not(.cm-activeLine) .list-marker, .cm-line:not(.cm-activeLine) .task-marker, .cm-line:not(.cm-activeLine) .done-marker':
       {
         'font-size': '1px',
@@ -212,10 +288,20 @@
   let value: string = ''
   let focused: boolean = false
   let view: any
+  let withVim: boolean = true
+  const audioLoop = new Audio(backgroundSoundUrl)
+  audioLoop.loop = true
+  audioLoop.volume = 0.3
+  let loopPlaying: boolean = false
 
   // window.api.onSendData(async (data: string) => {
   //   value = data
   // })
+
+  window.api.onTurnOnOffVim(async () => {
+    console.log('hello')
+    changeVimMode()
+  })
 
   function log(data: string) {
     window.api.logData(data)
@@ -227,6 +313,25 @@
       view.focus()
     }
   }
+
+  function changeVimMode() {
+    if (withVim) {
+      extensions = extensions.slice(1)
+      withVim = false
+    } else {
+      extensions = [vim(), ...extensions]
+      withVim = true
+    }
+  }
+
+  function playPauseMusic() {
+    if (loopPlaying) {
+      audioLoop.pause()
+    } else {
+      audioLoop.play()
+    }
+    loopPlaying = !loopPlaying
+  }
 </script>
 
 <svelte:window on:keydown={focusIfNotFocused} />
@@ -237,8 +342,8 @@
     flex flex-col justify-between px-5 py-5 bg-[#f9f9f9] h-full rounded-[11px]"
   >
     <div class="flex flex-row justify-between font-bold">
-      <div>(っ ᵔ-ᵔ)っ</div>
-      <div>♪♪♪ ヽ(ᵔ-ᵔ )ゞ</div>
+      <button on:click={changeVimMode}>(っ ᵔ-ᵔ)っ</button>
+      <button on:click={playPauseMusic}>♪♪♪ ヽ(ᵔ-ᵔ )ゞ</button>
     </div>
     <div class="flex-1 overflow-scroll mt-5">
       <CodeMirror
