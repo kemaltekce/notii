@@ -1,14 +1,27 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
-const { join } = require('path')
+const path = require('path')
+const fs = require('fs')
 
 // global parameters
 let mainWindow
 let tray
+const dataPath = path.join(__dirname, 'data')
+const notesFile = path.join(dataPath, 'notes.md')
 let data = ''
 
 // menu
 Menu.setApplicationMenu(null)
+
+// methods
+function createDataFiles() {
+  if (!fs.existsSync(dataPath)) {
+    fs.mkdirSync(dataPath)
+  }
+  if (!fs.existsSync(notesFile)) {
+    fs.writeFileSync(notesFile, '')
+  }
+}
 
 // main window method
 const createWindow = () => {
@@ -18,9 +31,9 @@ const createWindow = () => {
     height: 1200,
     minWidth: 400,
     minHeight: 400,
-    icon: join(__dirname, 'icons/icon.png'),
+    icon: path.join(__dirname, 'icons/icon.png'),
     webPreferences: {
-      preload: join(__dirname, 'preload.cjs'),
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   })
 
@@ -82,13 +95,14 @@ const createWindow = () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 
   mainWindow.webContents.on('did-finish-load', async () => {
+    const data = fs.readFileSync(notesFile, 'utf8')
     mainWindow.webContents.send('on-send-data', data)
   })
 }
 
 // tray method
 const createTray = () => {
-  tray = new Tray(join(__dirname, 'icons/tray.png'))
+  tray = new Tray(path.join(__dirname, 'icons/tray.png'))
   tray.setIgnoreDoubleClickEvents(true)
   tray.on('click', () => {
     // On macOS it's common to re-create a window in the app when the
@@ -117,6 +131,7 @@ if (!gotTheLock) {
   })
   // Create myWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
+    createDataFiles()
     createWindow()
     createTray()
 
@@ -135,6 +150,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-ipcMain.on('log-data', (event, data) => {
-  console.log(data)
+ipcMain.on('save-data', (event, data) => {
+  fs.writeFileSync(notesFile, data)
 })

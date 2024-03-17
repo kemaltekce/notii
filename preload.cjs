@@ -9,7 +9,7 @@ const API = {
     ipcRenderer.on('on-turn-on-off-vim', (event, args) => {
       callback(args)
     }),
-  logData: (data) => ipcRenderer.send('log-data', data),
+  saveData: (data) => ipcRenderer.send('save-data', data),
 }
 
 contextBridge.exposeInMainWorld('api', API)

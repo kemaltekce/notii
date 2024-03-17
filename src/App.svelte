@@ -173,21 +173,6 @@
     ])
   )
 
-  let extensions = [
-    vim(),
-    styles,
-    bracketMatching({ brackets: '{}' }),
-    EditorView.lineWrapping,
-    awesome_line_wrapping_plugin,
-    EditorView.domEventHandlers({
-      focus: () => {
-        focused = true
-      },
-      blur: () => {
-        focused = false
-      },
-    }),
-  ]
   let cmStyles = {
     '.cm-activeLine': {
       'background-color': 'transparent',
@@ -285,7 +270,60 @@
     },
   }
 
-  let value: string = ''
+  let extensions = [
+    vim(),
+    styles,
+    bracketMatching({ brackets: '{}' }),
+    EditorView.lineWrapping,
+    awesome_line_wrapping_plugin,
+    EditorView.domEventHandlers({
+      focus: () => {
+        focused = true
+      },
+      blur: () => {
+        focused = false
+      },
+      keydown: (event: any, view: any) => {
+        if (event.metaKey && event.shiftKey && event.key === 'i') {
+          const cursor = view.state.selection.main.head
+          const line = view.state.doc.lineAt(cursor)
+          const position: number = line.from
+          let text: string = line.text
+          const indent: number = text.split('-')[0].length
+          // task to done
+          if (/^\s*-\s\[[\s]\]\s/.test(text)) {
+            view.dispatch({
+              changes: {
+                from: position + indent,
+                to: position + indent + 6,
+                insert: '- [x] ',
+              },
+            })
+            // done to note
+          } else if (/^\s*-\s\[[xX]\]\s/.test(text)) {
+            view.dispatch({
+              changes: {
+                from: position + indent,
+                to: position + indent + 6,
+                insert: '- ',
+              },
+            })
+            // note to task
+          } else if (/^\s*-\s/.test(text)) {
+            view.dispatch({
+              changes: {
+                from: position + indent,
+                to: position + indent + 2,
+                insert: '- [ ] ',
+              },
+            })
+          }
+        }
+      },
+    }),
+  ]
+
+  let value: string = '- [ ] asdfasdf'
   let focused: boolean = false
   let view: any
   let withVim: boolean = true
@@ -294,17 +332,16 @@
   audioLoop.volume = 0.3
   let loopPlaying: boolean = false
 
-  // window.api.onSendData(async (data: string) => {
-  //   value = data
-  // })
+  window.api.onSendData(async (data: string) => {
+    value = data
+  })
 
   window.api.onTurnOnOffVim(async () => {
-    console.log('hello')
     changeVimMode()
   })
 
-  function log(data: string) {
-    window.api.logData(data)
+  function save(data: string) {
+    window.api.saveData(data)
   }
 
   function focusIfNotFocused(event: any) {
@@ -359,7 +396,7 @@
             },
           ],
         })}
-        on:change={() => log(value)}
+        on:change={() => save(value)}
         on:ready={(e) => {
           view = e.detail
         }}
