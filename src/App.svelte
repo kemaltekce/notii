@@ -270,6 +270,46 @@
     },
   }
 
+  function addStringAroundSelection(
+    selection: { to: number; from: number },
+    str: string
+  ) {
+    view.dispatch({
+      changes: {
+        from: selection.to,
+        to: selection.to,
+        insert: str,
+      },
+    })
+    view.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.from,
+        insert: str,
+      },
+    })
+  }
+
+  function deleteStringAroundSelection(
+    selection: { to: number; from: number },
+    str: string
+  ) {
+    view.dispatch({
+      changes: {
+        from: selection.to,
+        to: selection.to + str.length,
+        insert: '',
+      },
+    })
+    view.dispatch({
+      changes: {
+        from: selection.from - str.length,
+        to: selection.from,
+        insert: '',
+      },
+    })
+  }
+
   let extensions = [
     vim(),
     styles,
@@ -283,7 +323,13 @@
       blur: () => {
         focused = false
       },
-      keydown: (event: any, view: any) => {
+      keydown: (event: KeyboardEvent, view: any) => {
+        const hotkeys: { [key: string]: string } = {
+          b: '**',
+          j: '*',
+          k: '`',
+          l: '--',
+        }
         if (event.metaKey && event.shiftKey && event.key === 'i') {
           const cursor = view.state.selection.main.head
           const line = view.state.doc.lineAt(cursor)
@@ -317,6 +363,23 @@
                 insert: '- [ ] ',
               },
             })
+          }
+          // add and remove tags/highlights
+        } else if (event.metaKey && Object.keys(hotkeys).includes(event.key)) {
+          const selection = view.state.selection.main
+          const str = hotkeys[event.key]
+          const before = view.state.sliceDoc(
+            selection.from - str.length,
+            selection.from
+          )
+          const after = view.state.sliceDoc(
+            selection.to,
+            selection.to + str.length
+          )
+          if (before === str && after === str) {
+            deleteStringAroundSelection(selection, str)
+          } else {
+            addStringAroundSelection(selection, str)
           }
         }
       },
