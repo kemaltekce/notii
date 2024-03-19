@@ -330,18 +330,18 @@
           k: '`',
           l: '--',
         }
+        const cursor = view.state.selection.main.head
+        const line = view.state.doc.lineAt(cursor)
+        const lineStart: number = line.from
+        let text: string = line.text
+        const indent: number = text.split(/[^\s]/)[0].length
         if (event.metaKey && event.shiftKey && event.key === 'i') {
-          const cursor = view.state.selection.main.head
-          const line = view.state.doc.lineAt(cursor)
-          const position: number = line.from
-          let text: string = line.text
-          const indent: number = text.split('-')[0].length
           // task to done
           if (/^\s*-\s\[[\s]\]\s/.test(text)) {
             view.dispatch({
               changes: {
-                from: position + indent,
-                to: position + indent + 6,
+                from: lineStart + indent,
+                to: lineStart + indent + 6,
                 insert: '- [x] ',
               },
             })
@@ -349,22 +349,45 @@
           } else if (/^\s*-\s\[[xX]\]\s/.test(text)) {
             view.dispatch({
               changes: {
-                from: position + indent,
-                to: position + indent + 6,
-                insert: '- ',
+                from: lineStart + indent,
+                to: lineStart + indent + 6,
+                insert: '',
               },
             })
             // note to task
           } else if (/^\s*-\s/.test(text)) {
             view.dispatch({
               changes: {
-                from: position + indent,
-                to: position + indent + 2,
+                from: lineStart + indent,
+                to: lineStart + indent + 2,
                 insert: '- [ ] ',
+              },
+            })
+          } else {
+            view.dispatch({
+              changes: {
+                from: lineStart + indent,
+                to: lineStart + indent,
+                insert: '- ',
               },
             })
           }
           // add and remove tags/highlights
+        } else if (event.metaKey && event.key === 'h') {
+          const heading = /^\s*\#{1,3}\s/
+          const headingLength = heading.test(text)
+            ? text.match(heading)![0].trim().length
+            : 0
+          const nextHeading = (headingLength + 1) % 4
+          const space = headingLength ? 0 : 1
+          const removeSpace = headingLength === 3 ? 1 : 0
+          view.dispatch({
+            changes: {
+              from: lineStart + indent,
+              to: lineStart + indent + headingLength + removeSpace,
+              insert: '#'.repeat(nextHeading) + ' '.repeat(space),
+            },
+          })
         } else if (event.metaKey && Object.keys(hotkeys).includes(event.key)) {
           const selection = view.state.selection.main
           const str = hotkeys[event.key]
