@@ -191,13 +191,13 @@
       {
         color: '#00000000',
         background:
-          'linear-gradient(to top, #f9f9f9 44%, #c4c4c4 44%, #c4c4c4 56%, #f9f9f9 56%)',
+          'linear-gradient(to top, #FEFEFE 44%, #c4c4c4 44%, #c4c4c4 56%, #FEFEFE 56%)',
       },
     '.cm-line:has(.code-marker):not(:has(.code)):not(.cm-activeLine):not(:has(.cm-selectionMatch))':
       {
         color: '#00000000',
         background: '#fcd0a5',
-        // 'linear-gradient(to top, #f9f9f9 44%, #c4c4c4 44%, #c4c4c4 56%, #f9f9f9 56%)',
+        // 'linear-gradient(to top, #FEFEFE 44%, #c4c4c4 44%, #c4c4c4 56%, #FEFEFE 56%)',
       },
     // inline
     '.linethrough': {
@@ -462,9 +462,9 @@
 <main class="px-3 py-3 h-screen">
   <div
     class="
-    flex flex-col justify-between px-5 py-5 bg-[#f9f9f9] h-full rounded-[11px]"
+    flex flex-col justify-between px-5 py-4 bg-[#FEFEFE] h-full rounded-[7px] border-[#c4c4c450] border-[1px]"
   >
-    <div class="flex flex-row justify-between font-bold">
+    <div class="flex flex-row justify-between font-semibold">
       <button on:click={changeVimMode}>(っ ᵔ-ᵔ)っ</button>
       <button on:click={playPauseMusic}>♪♪♪ ヽ(ᵔ-ᵔ )ゞ</button>
     </div>
@@ -490,10 +490,10 @@
         styles={cmStyles}
       />
     </div>
-    <div class="flex flex-row justify-end text-[#C4C4C4]">
+    <!-- <div class="flex flex-row justify-end text-[#C4C4C4] font-light">
       <button on:click={() => (value = '')}>clear</button>
       <div />
-    </div>
+    </div> -->
   </div>
 </main>
 
