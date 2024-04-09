@@ -8,7 +8,7 @@
     bracketMatching,
   } from '@codemirror/language'
   import { tags, Tag, styleTags } from '@lezer/highlight'
-  import { vim } from '@replit/codemirror-vim'
+  import { Vim, vim } from '@replit/codemirror-vim'
   import { awesome_line_wrapping_plugin } from './js/linewrapping'
   import backgroundSoundUrl from './assets/background.mp3'
 
@@ -309,6 +309,11 @@
       },
     })
   }
+
+  Vim.unmap('j')
+  Vim.unmap('k')
+  Vim.map('j', 'g<Down>')
+  Vim.map('k', 'g<Up>')
 
   let extensions = [
     vim(),
